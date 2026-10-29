@@ -18,6 +18,10 @@ data class RedditPost(
     val createdAt: Long,
 )
 
+data class FeedResult(val posts: List<RedditPost>, val errors: List<String>, val badSubs: List<String>)
+
+private class FeedException(val code: Int, message: String) : Exception(message)
+
 /**
  * Reads Reddit's public RSS feeds. No login or API key needed, and all subreddits are
  * fetched in ONE request (r/a+b+c) to keep battery and data use low.
@@ -25,24 +29,26 @@ data class RedditPost(
 object RedditFeed {
     private const val UA = "android:com.nmr.leadfinder:1.0 (personal post alerts)"
 
-    /** Returns the posts plus a list of problems (e.g. a misspelled subreddit). */
-    fun fetch(subs: List<String>): Pair<List<RedditPost>, List<String>> {
-        if (subs.isEmpty()) return emptyList<RedditPost>() to emptyList()
+    /** Returns the posts, any problems, and subreddits that don't exist or are private. */
+    fun fetch(subs: List<String>): FeedResult {
+        if (subs.isEmpty()) return FeedResult(emptyList(), emptyList(), emptyList())
         return try {
-            parse(get(feedUrl(subs))) to emptyList()
+            FeedResult(parse(get(feedUrl(subs))), emptyList(), emptyList())
         } catch (e: Exception) {
-            if (subs.size == 1) return emptyList<RedditPost>() to listOf("r/${subs[0]}: ${e.message}")
             // One bad subreddit can break the combined feed; check them one by one to find it.
             val posts = mutableListOf<RedditPost>()
             val errors = mutableListOf<String>()
+            val bad = mutableListOf<String>()
             for (s in subs) {
                 try {
                     posts += parse(get(feedUrl(listOf(s))))
                 } catch (e2: Exception) {
                     errors += "r/$s: ${e2.message}"
+                    if (e2 is FeedException && (e2.code == 404 || e2.code == 403)) bad += s
+                    if (e2 is FeedException && e2.code == 429) break // Reddit wants us to slow down
                 }
             }
-            posts to errors
+            FeedResult(posts, errors, bad)
         }
     }
 
@@ -64,7 +70,7 @@ object RedditFeed {
                     429 -> "Reddit says too many requests, will retry next check"
                     else -> "HTTP $code"
                 }
-                throw Exception(hint)
+                throw FeedException(code, hint)
             }
             return conn.inputStream.bufferedReader().use { it.readText() }
         } finally {

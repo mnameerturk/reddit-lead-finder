@@ -41,13 +41,17 @@ object Checker {
         withContext(Dispatchers.IO) {
             val prefs = Prefs(ctx).also { it.migrateDefaults() }
             val store = LeadStore(ctx)
-            val subs = prefs.subredditList()
+            val bad = prefs.badSubs.map { it.lowercase() }.toSet()
+            val subs = prefs.subredditList().filter { it.lowercase() !in bad }
             if (subs.isEmpty()) {
                 finish(prefs, "Add at least one subreddit in Settings.")
                 return@withContext 0
             }
 
-            val (posts, feedErrors) = RedditFeed.fetch(subs)
+            val feed = RedditFeed.fetch(subs)
+            val posts = feed.posts
+            val feedErrors = feed.errors
+            if (feed.badSubs.isNotEmpty()) prefs.badSubs = prefs.badSubs + feed.badSubs
             val seen = store.seen()
             val now = System.currentTimeMillis()
             val maxAgeMs = prefs.maxAgeHours * 3_600_000L
@@ -89,7 +93,10 @@ object Checker {
 
             val base = "Checked ${subs.size} subreddit${if (subs.size == 1) "" else "s"}: " +
                 if (leads.isEmpty()) "no new leads." else "${leads.size} new lead${if (leads.size == 1) "" else "s"}."
-            val errors = if (feedErrors.isEmpty()) "" else " Problem: " + feedErrors.joinToString("; ")
+            val skipped = prefs.badSubs
+            val errors = (if (feedErrors.isEmpty()) "" else " Problem: " + feedErrors.joinToString("; ") + ".") +
+                (if (skipped.isEmpty()) "" else " Skipping (not found or private): " +
+                    skipped.joinToString(", ") { "r/$it" } + ". Edit the subreddit list to retry them.")
             finish(prefs, base + errors + aiNote)
 
             if (notify && leads.isNotEmpty()) Notify.leads(ctx, leads)

@@ -8,7 +8,12 @@ class Prefs(ctx: Context) {
     private val p: SharedPreferences = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
     companion object {
-        const val DEFAULT_SUBREDDITS = "NewTubers\nyoutubers\nPartneredYoutube\nSmallYTChannel"
+        const val DEFAULT_SUBREDDITS =
+            "NewTubers\nyoutubers\nPartneredYoutube\nSmallYTChannel\nSmallYoutubers\nNewYouTubeChannels\n" +
+                "Smallyoutubechannels\nSmallYouTubersUnite\nYouTubeCreators\nYoutubeAutomated\nYT_Faceless\n" +
+                "aitubers\nLetsPlay\nVlogging\ncontentcreation"
+
+        private const val OLD1_SUBREDDITS = "NewTubers\nyoutubers\nPartneredYoutube\nSmallYTChannel"
 
         const val DEFAULT_INCLUDE =
             "just started, new channel, starting a channel, start a channel, start a youtube, starting youtube, " +
@@ -87,7 +92,10 @@ class Prefs(ctx: Context) {
     // ---- What to watch ----
     var subreddits: String
         get() = str("subreddits", DEFAULT_SUBREDDITS)
-        set(v) = put("subreddits", v)
+        set(v) {
+            if (v != subreddits) p.edit().remove("badSubs").apply()
+            put("subreddits", v)
+        }
     var includeKw: String
         get() = str("includeKw", DEFAULT_INCLUDE)
         set(v) = put("includeKw", v)
@@ -120,12 +128,22 @@ class Prefs(ctx: Context) {
 
     /** Upgrades filters still on the previous built-in defaults, without touching anything the user edited. */
     fun migrateDefaults() {
-        if (p.getInt("defaultsVersion", 1) >= 2) return
-        if (includeKw == OLD1_INCLUDE) includeKw = DEFAULT_INCLUDE
-        if (lookingFor == OLD1_LOOKING_FOR) lookingFor = DEFAULT_LOOKING_FOR
-        if (aboutMe == OLD1_ABOUT_ME) aboutMe = DEFAULT_ABOUT_ME
-        p.edit().putInt("defaultsVersion", 2).apply()
+        val v = p.getInt("defaultsVersion", 1)
+        if (v < 2) {
+            if (includeKw == OLD1_INCLUDE) includeKw = DEFAULT_INCLUDE
+            if (lookingFor == OLD1_LOOKING_FOR) lookingFor = DEFAULT_LOOKING_FOR
+            if (aboutMe == OLD1_ABOUT_ME) aboutMe = DEFAULT_ABOUT_ME
+        }
+        if (v < 3) {
+            if (subreddits == OLD1_SUBREDDITS) subreddits = DEFAULT_SUBREDDITS
+        }
+        if (v < 3) p.edit().putInt("defaultsVersion", 3).apply()
     }
+
+    /** Subreddits that returned "not found"/"private"; skipped until the subreddit list is edited. */
+    var badSubs: Set<String>
+        get() = p.getStringSet("badSubs", emptySet()) ?: emptySet()
+        set(v) = p.edit().putStringSet("badSubs", v).apply()
 
     val aiReady get() = aiEnabled && apiKey.isNotBlank()
 
