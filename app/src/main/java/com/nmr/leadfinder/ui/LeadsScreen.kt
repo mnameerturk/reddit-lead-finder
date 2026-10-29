@@ -101,7 +101,7 @@ fun LeadsScreen(onOpen: (String) -> Unit, onSettings: () -> Unit) {
                     checking -> "Checking Reddit…"
                     lastCheck == 0L -> if (prefs.enabled) "First check runs shortly. Tap ⟳ to check now." else "Monitoring is off (Settings)."
                     else -> "Last check ${ago(lastCheck)}. $status"
-                } + if (!prefs.aiReady && prefs.aiEnabled) " Add a Gemini key in Settings for AI rating and replies." else "",
+                } + if (!prefs.aiReady && prefs.aiEnabled) " Add a Gemini key in Settings for AI rating." else "",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

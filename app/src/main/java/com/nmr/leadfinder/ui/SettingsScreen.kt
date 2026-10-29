@@ -69,7 +69,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     var key by remember { mutableStateOf(prefs.apiKey) }
     var lookingFor by remember { mutableStateOf(prefs.lookingFor) }
     var minScore by remember { mutableFloatStateOf(prefs.minScore.toFloat()) }
-    var aboutMe by remember { mutableStateOf(prefs.aboutMe) }
     var model by remember { mutableStateOf(prefs.model) }
 
     fun save() {
@@ -87,7 +86,6 @@ fun SettingsScreen(onBack: () -> Unit) {
         prefs.apiKey = key
         prefs.lookingFor = lookingFor.ifBlank { Prefs.DEFAULT_LOOKING_FOR }
         prefs.minScore = minScore.roundToInt()
-        prefs.aboutMe = aboutMe.ifBlank { Prefs.DEFAULT_ABOUT_ME }
         prefs.model = model
         if (scheduleChanged) Scheduler.apply(ctx, replace = true)
     }
@@ -142,8 +140,8 @@ fun SettingsScreen(onBack: () -> Unit) {
             Chips(AGES, maxAge) { maxAge = it }
 
             // ---------- AI ----------
-            Section("AI rating & replies (Gemini, free)")
-            SwitchRow("Use AI", "Rates each matching post and writes reply drafts.", ai) { ai = it }
+            Section("AI rating (Gemini, free)")
+            SwitchRow("Use AI", "Rates each matching post so you only see the good ones.", ai) { ai = it }
             OutlinedTextField(
                 key, { key = it.trim() },
                 label = { Text("Gemini API key") },
@@ -160,11 +158,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             Label("Minimum AI score to show a post: ${minScore.roundToInt()}/10")
             Slider(value = minScore, onValueChange = { minScore = it }, valueRange = 1f..10f, steps = 8)
             Hint("Higher = fewer but better posts. Start at 6 and adjust.")
-            Field(
-                "About me & how replies should sound",
-                aboutMe,
-                "The AI follows this when it writes drafts."
-            ) { aboutMe = it }
             OutlinedTextField(
                 model, { model = it.trim() },
                 label = { Text("Gemini model (advanced)") },
@@ -178,7 +171,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             TextButton(
                 onClick = {
                     subs = Prefs.DEFAULT_SUBREDDITS; include = Prefs.DEFAULT_INCLUDE; exclude = Prefs.DEFAULT_EXCLUDE
-                    lookingFor = Prefs.DEFAULT_LOOKING_FOR; aboutMe = Prefs.DEFAULT_ABOUT_ME; model = Prefs.DEFAULT_MODEL
+                    lookingFor = Prefs.DEFAULT_LOOKING_FOR; model = Prefs.DEFAULT_MODEL
                     minScore = 6f; maxAge = 24
                     toast(ctx, "Defaults restored. Tap Save to keep them.")
                 },
