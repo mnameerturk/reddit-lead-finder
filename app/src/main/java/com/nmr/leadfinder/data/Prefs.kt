@@ -11,22 +11,50 @@ class Prefs(ctx: Context) {
         const val DEFAULT_SUBREDDITS = "NewTubers\nyoutubers\nPartneredYoutube\nSmallYTChannel"
 
         const val DEFAULT_INCLUDE =
-            "no views, views, monetiz, monetis, first video, faceless, start a channel, start a youtube, " +
-                "starting a channel, starting youtube, grow, growth, subscribers, subs, watch time, " +
-                "4000 hours, 4k hours, algorithm, beginner, niche, advice, help, feedback, " +
-                "review my channel, stuck, ctr, thumbnail, retention, impressions"
+            "just started, new channel, starting a channel, start a channel, start a youtube, starting youtube, " +
+                "should i start, where do i start, how do i start, first video, first short, my first, beginner, " +
+                "faceless, niche, shorts, short got, results, milestone, update, month, reached, hit, finally, " +
+                "proud, celebrate, 1k, 2k, 3k, 100 subs, views on, no views, 0 views, views, not growing, " +
+                "struggling, stuck, dropped, dead channel, grow, growth, subscribers, subs, monetiz, monetis, " +
+                "watch time, 4000 hours, algorithm, advice, help, feedback, review my channel, ctr, retention, impressions"
 
         const val DEFAULT_EXCLUDE =
             "sub4sub, sub for sub, hiring, for hire, check out my channel, promote my, giveaway"
 
         const val DEFAULT_LOOKING_FOR =
+            "YouTubers I can help, mainly:\n" +
+                "1. Complete beginners who are just starting a channel or about to (where to start, which niche, " +
+                "faceless or not, their first videos).\n" +
+                "2. People sharing results or milestones that are actually weak, especially when they seem proud " +
+                "of them or think it's good: e.g. 1k-5k views on Shorts, a few hundred views on long videos, " +
+                "\"my first 100 subs\", \"month 3 update\", slow growth. Rate these HIGH even if they don't ask for help.\n" +
+                "3. People struggling: no views, stuck, not growing, views dropped, can't get monetized, low CTR or retention.\n" +
+                "NOT relevant: established channels (roughly 10k+ subscribers or consistently strong views), people " +
+                "only advertising their channel, sub4sub, hiring or selling posts, memes, general complaints about " +
+                "YouTube, and viewer questions."
+
+        const val DEFAULT_ABOUT_ME =
+            "I run several faceless documentary YouTube channels (history, science, finance) and mentor " +
+                "beginners to grow and get monetized. Write like a helpful, experienced creator on Reddit: " +
+                "casual, specific and practical. Give 2-4 concrete tips that fit their exact situation. " +
+                "If they're sharing a result they think is good, congratulate them briefly, then honestly but " +
+                "kindly explain what it really means and what to improve next. Never mock or talk down. " +
+                "Under 150 words. No links, no emojis, no hashtags, and don't pitch coaching or ask them to DM me."
+
+        private const val OLD1_INCLUDE =
+            "no views, views, monetiz, monetis, first video, faceless, start a channel, start a youtube, " +
+                "starting a channel, starting youtube, grow, growth, subscribers, subs, watch time, " +
+                "4000 hours, 4k hours, algorithm, beginner, niche, advice, help, feedback, " +
+                "review my channel, stuck, ctr, thumbnail, retention, impressions"
+
+        private const val OLD1_LOOKING_FOR =
             "Beginners or small creators (under about 10k subscribers) who are struggling to grow, get views " +
                 "or get monetized, or who are just starting a YouTube channel (including faceless or " +
                 "documentary channels) and want guidance. Also business owners asking whether YouTube is " +
                 "worth it. NOT: people only promoting their channel, sub4sub, hiring posts, memes, or " +
                 "complaints about YouTube itself."
 
-        const val DEFAULT_ABOUT_ME =
+        private const val OLD1_ABOUT_ME =
             "I run several faceless documentary YouTube channels (history, science, finance) and mentor " +
                 "beginners to grow and get monetized. Write like a helpful, experienced creator on Reddit: " +
                 "casual, specific and practical. Give 2-4 concrete tips that fit their exact situation. " +
@@ -89,6 +117,15 @@ class Prefs(ctx: Context) {
     var minScore: Int
         get() = p.getInt("minScore", 6)
         set(v) = p.edit().putInt("minScore", v).apply()
+
+    /** Upgrades filters still on the previous built-in defaults, without touching anything the user edited. */
+    fun migrateDefaults() {
+        if (p.getInt("defaultsVersion", 1) >= 2) return
+        if (includeKw == OLD1_INCLUDE) includeKw = DEFAULT_INCLUDE
+        if (lookingFor == OLD1_LOOKING_FOR) lookingFor = DEFAULT_LOOKING_FOR
+        if (aboutMe == OLD1_ABOUT_ME) aboutMe = DEFAULT_ABOUT_ME
+        p.edit().putInt("defaultsVersion", 2).apply()
+    }
 
     val aiReady get() = aiEnabled && apiKey.isNotBlank()
 

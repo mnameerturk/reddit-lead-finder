@@ -24,6 +24,7 @@ import com.nmr.leadfinder.work.Scheduler
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.nmr.leadfinder.data.Prefs(this).migrateDefaults()
         Notify.ensureChannel(this)
         Scheduler.apply(this, replace = false)
         setContent { AppTheme { App() } }

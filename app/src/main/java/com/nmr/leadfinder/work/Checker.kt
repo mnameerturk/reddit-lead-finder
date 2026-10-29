@@ -39,7 +39,7 @@ object Checker {
 
     suspend fun run(ctx: Context, notify: Boolean): Int = mutex.withLock {
         withContext(Dispatchers.IO) {
-            val prefs = Prefs(ctx)
+            val prefs = Prefs(ctx).also { it.migrateDefaults() }
             val store = LeadStore(ctx)
             val subs = prefs.subredditList()
             if (subs.isEmpty()) {
