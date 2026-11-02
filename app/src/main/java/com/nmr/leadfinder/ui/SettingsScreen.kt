@@ -70,6 +70,13 @@ fun SettingsScreen(onBack: () -> Unit) {
     var lookingFor by remember { mutableStateOf(prefs.lookingFor) }
     var minScore by remember { mutableFloatStateOf(prefs.minScore.toFloat()) }
     var model by remember { mutableStateOf(prefs.model) }
+    var presetId by remember { mutableStateOf(prefs.presetId) }
+
+    fun applyPreset(id: String) {
+        val pr = Prefs.preset(id)
+        presetId = pr.id
+        subs = pr.subreddits; include = pr.include; exclude = pr.exclude; lookingFor = pr.lookingFor
+    }
 
     fun save() {
         val scheduleChanged = enabled != prefs.enabled || interval != prefs.intervalMin ||
@@ -84,7 +91,8 @@ fun SettingsScreen(onBack: () -> Unit) {
         prefs.maxAgeHours = maxAge
         prefs.aiEnabled = ai
         prefs.apiKey = key
-        prefs.lookingFor = lookingFor.ifBlank { Prefs.DEFAULT_LOOKING_FOR }
+        prefs.lookingFor = lookingFor.ifBlank { Prefs.preset(presetId).lookingFor }
+        prefs.presetId = presetId
         prefs.minScore = minScore.roundToInt()
         prefs.model = model
         if (scheduleChanged) Scheduler.apply(ctx, replace = true)
@@ -129,6 +137,23 @@ fun SettingsScreen(onBack: () -> Unit) {
 
             // ---------- What to watch ----------
             Section("What to watch")
+            Label("Target audience")
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Prefs.PRESETS.forEach { pr ->
+                    FilterChip(
+                        selected = pr.id == presetId,
+                        onClick = {
+                            applyPreset(pr.id)
+                            toast(ctx, "${pr.label} filters loaded. Tap Save to use them.")
+                        },
+                        label = { Text(pr.label) },
+                    )
+                }
+            }
+            Hint("Fills the subreddits, keywords and AI description below. You can still edit them after.")
             Field("Subreddits", subs, "One per line, without r/") { subs = it }
             Field(
                 "Look for posts containing any of these",
@@ -170,13 +195,12 @@ fun SettingsScreen(onBack: () -> Unit) {
             Button(onClick = { saveAndBack() }, modifier = Modifier.fillMaxWidth()) { Text("Save") }
             TextButton(
                 onClick = {
-                    subs = Prefs.DEFAULT_SUBREDDITS; include = Prefs.DEFAULT_INCLUDE; exclude = Prefs.DEFAULT_EXCLUDE
-                    lookingFor = Prefs.DEFAULT_LOOKING_FOR; model = Prefs.DEFAULT_MODEL
+                    applyPreset(presetId); model = Prefs.DEFAULT_MODEL
                     minScore = 6f; maxAge = 24
                     toast(ctx, "Defaults restored. Tap Save to keep them.")
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Restore default filters") }
+            ) { Text("Reset filters for this audience") }
             Spacer(Modifier.height(24.dp))
         }
     }

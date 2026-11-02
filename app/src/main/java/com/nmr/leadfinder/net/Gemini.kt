@@ -26,7 +26,8 @@ object Gemini {
                 )
             }
             val prompt = """
-                You help a YouTube mentor find Reddit posts worth replying to with genuinely helpful advice.
+                You help someone find Reddit posts from people they could help with a genuinely useful reply
+                (and who might later become clients).
 
                 What they are looking for:
                 $lookingFor

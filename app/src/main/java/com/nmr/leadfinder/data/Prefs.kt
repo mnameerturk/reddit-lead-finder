@@ -3,6 +3,16 @@ package com.nmr.leadfinder.data
 import android.content.Context
 import android.content.SharedPreferences
 
+/** A ready-made audience: fills the subreddits, keywords and AI description in one tap. */
+data class Preset(
+    val id: String,
+    val label: String,
+    val subreddits: String,
+    val include: String,
+    val exclude: String,
+    val lookingFor: String,
+)
+
 /** All user settings. Everything here is editable in the app's Settings screen. */
 class Prefs(ctx: Context) {
     private val p: SharedPreferences = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
@@ -67,6 +77,45 @@ class Prefs(ctx: Context) {
 
         const val DEFAULT_MODEL = "gemini-flash-latest"
 
+        // ---- Audience: Indian students looking at MBBS abroad (Kyrgyzstan + Central Asia) ----
+        const val MBBS_SUBREDDITS =
+            "Neet_india\nASKNEET\nMBBSindia\nMEDICOreTARDS\nJEENEETards\nindianmedschool\nFMGE\nIMGreddit\n" +
+                "Kyrgyzstan\nbishkek\nKazakhstan\nUzbekistan\nTajikistan\nStudyAbroad\nIndianStudentsAbroad\nCBSE"
+
+        const val MBBS_INCLUDE =
+            "mbbs abroad, abroad, foreign mbbs, outside india, study mbbs, mbbs in, kyrgyz, bishkek, " +
+                "kazakh, almaty, astana, semey, karaganda, uzbek, tashkent, samarkand, bukhara, tajik, dushanbe, " +
+                "turkmen, central asia, russia, georgia, armenia, nepal, bangladesh, philippines, " +
+                "fmge, next exam, nmc, wdoms, low score, low marks, low rank, no seat, not getting, didn't get, " +
+                "didnt get, won't get, wont get, government seat, govt seat, private college, management quota, " +
+                "fees, budget, lakh, drop year, dropper, should i drop, plan b, backup, counselling, counseling, " +
+                "consultant, agent, scam, admission, university, which country"
+
+        const val MBBS_EXCLUDE =
+            "admission open, admissions open, contact us, call now, whatsapp us, whatsapp me, dm for details, " +
+                "limited seats, hiring, for hire"
+
+        const val MBBS_LOOKING_FOR =
+            "Indian students (or their parents) who could study MBBS abroad, especially in Kyrgyzstan and other " +
+                "Central Asian countries (Kazakhstan, Uzbekistan, Tajikistan). Rate HIGH:\n" +
+                "1. People openly considering MBBS abroad, asking which country or university, fees, NMC rules, " +
+                "FMGE/NExT pass rates, safety, food, weather or life in Bishkek/Osh/Almaty/Tashkent.\n" +
+                "2. NEET-qualified students with a low score or rank who won't get a government seat and can't afford " +
+                "private colleges in India, or who are unsure whether to drop a year. Rate these HIGH even if they " +
+                "don't mention abroad yet.\n" +
+                "3. People worried about agents or consultants, scams, or comparing offers.\n" +
+                "4. Students already admitted abroad asking about visas, travel, hostels or documents (medium score).\n" +
+                "NOT relevant: students already in Indian medical colleges, NEET PG/INICET or residency talk, pure " +
+                "subject doubts (physics/chemistry/biology questions), study motivation posts, memes, and agents or " +
+                "consultancies advertising admissions."
+
+        val PRESETS = listOf(
+            Preset("youtube", "YouTube mentorship", DEFAULT_SUBREDDITS, DEFAULT_INCLUDE, DEFAULT_EXCLUDE, DEFAULT_LOOKING_FOR),
+            Preset("mbbs", "MBBS abroad (Central Asia)", MBBS_SUBREDDITS, MBBS_INCLUDE, MBBS_EXCLUDE, MBBS_LOOKING_FOR),
+        )
+
+        fun preset(id: String) = PRESETS.firstOrNull { it.id == id } ?: PRESETS.first()
+
         /** Splits a comma/newline separated setting into clean items. */
         fun items(s: String): List<String> =
             s.split(',', '\n').map { it.trim() }.filter { it.isNotBlank() }
@@ -122,6 +171,10 @@ class Prefs(ctx: Context) {
     var aboutMe: String
         get() = str("aboutMe", DEFAULT_ABOUT_ME)
         set(v) = put("aboutMe", v)
+    /** Which built-in audience the filters came from ("youtube" or "mbbs"). */
+    var presetId: String
+        get() = str("presetId", "youtube")
+        set(v) = put("presetId", v)
     var minScore: Int
         get() = p.getInt("minScore", 6)
         set(v) = p.edit().putInt("minScore", v).apply()
